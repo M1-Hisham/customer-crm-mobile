@@ -16,6 +16,8 @@ import 'views/client_dashboard_view.dart';
 import 'views/attendance_view.dart';
 import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 
+import 'core/theme/app_theme.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -30,9 +32,6 @@ class HajjajLawApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color royalGreen = const Color(0xFF1E3D30);
-    final Color goldColor = const Color(0xFFB8963A);
-
     return MaterialApp(
       title: 'منصة شركة حجاج الضويحي للمحاماة',
       debugShowCheckedModeBanner: false,
@@ -45,14 +44,9 @@ class HajjajLawApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      theme: ThemeData(
-        fontFamily: 'Cairo',
-        primaryColor: royalGreen,
-        colorScheme: ColorScheme.light(
-          primary: royalGreen,
-          secondary: goldColor,
-        ),
-        useMaterial3: true,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.light,
       ),
       home: const MainAppController(),
     );

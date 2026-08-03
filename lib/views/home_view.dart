@@ -3,7 +3,8 @@ import '../models/models.dart';
 import '../services/api_service.dart';
 import 'package:intl/intl.dart';
 import '../utils/date_helper.dart';
-import '../main.dart';
+import '../core/widgets/case_summary_card.dart';
+import '../core/theme/app_theme.dart';
 
 class HomeView extends StatelessWidget {
   final List<Customer> customers;
@@ -125,6 +126,13 @@ class HomeView extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                // Case Summary Card from New Scaffold
+                CaseSummaryCard(
+                  activeCases: activeCases,
+                  nextSessionDate: displayAppts.isNotEmpty ? displayAppts.first.date : 'لا يوجد',
+                ),
+                const SizedBox(height: 16),
+
                 // Stats Grid
                 GridView.count(
                   crossAxisCount: 2,
