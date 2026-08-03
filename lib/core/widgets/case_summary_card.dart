@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../theme/app_theme.dart';
 
 class CaseSummaryCard extends StatelessWidget {
@@ -13,6 +14,13 @@ class CaseSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return _content(context)
+        .animate()
+        .fadeIn(duration: 350.ms, curve: Curves.easeOut)
+        .slideY(begin: 0.1, end: 0, duration: 350.ms, curve: Curves.easeOut);
+  }
+
+  Widget _content(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(

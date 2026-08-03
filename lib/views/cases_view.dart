@@ -6,6 +6,7 @@ import '../models/models.dart';
 import '../services/api_service.dart';
 import 'documents_view.dart';
 import '../utils/date_helper.dart';
+import '../core/widgets/staggered_list_item.dart';
 
 class CasesView extends StatefulWidget {
   final List<Case> cases;
@@ -1557,7 +1558,9 @@ class _CasesViewState extends State<CasesView> {
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final c = filtered[index];
-                      return Container(
+                      return StaggeredListItem(
+                        index: index,
+                        child: Container(
                         margin: const EdgeInsets.only(bottom: 10),
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -1635,9 +1638,10 @@ class _CasesViewState extends State<CasesView> {
                           ),
                           onTap: () => _showDetailsSheet(c),
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  },
+                ),
           )
         ],
       ),
