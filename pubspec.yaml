@@ -23,6 +23,7 @@ dependencies:
   hijri: ^3.0.1
   add_2_calendar: ^3.0.1
   geolocator: ^11.0.0
+  google_fonts: ^6.1.0
 
 dev_dependencies:
   flutter_test:
