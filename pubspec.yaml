@@ -1,0 +1,46 @@
+name: mobile_flutter
+description: "A new Flutter project for Hajjaj Law Firm CRM system."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  http: ^1.1.0
+  shared_preferences: ^2.2.0
+  intl: ^0.20.2
+  cupertino_icons: ^1.0.5
+  flutter_ringtone_player: ^4.0.0+4
+  file_picker: ^11.0.2
+  url_launcher: ">=6.2.0 <6.3.0"
+  hijri: ^3.0.1
+  add_2_calendar: ^3.0.1
+  geolocator: ^11.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/logo.png
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/logo.png"
+  min_sdk_android: 21
+
+dependency_overrides:
+  url_launcher_android: 6.3.10
+
