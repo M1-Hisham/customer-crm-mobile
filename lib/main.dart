@@ -47,7 +47,6 @@ class HajjajLawApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.light,
-      ),
       home: const MainAppController(),
     );
   }

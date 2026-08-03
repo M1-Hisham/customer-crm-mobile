@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../utils/date_helper.dart';
 import '../core/widgets/case_summary_card.dart';
 import '../core/theme/app_theme.dart';
+import '../main.dart';
 
 class HomeView extends StatelessWidget {
   final List<Customer> customers;
