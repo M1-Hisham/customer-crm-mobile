@@ -2,7 +2,7 @@ name: mobile_flutter
 description: "A new Flutter project for Hajjaj Law Firm CRM system."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.4+5
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -26,6 +26,8 @@ dependencies:
   google_fonts: ^6.1.0
   animations: ^2.0.11
   flutter_animate: ^4.5.0
+  local_auth: ^2.2.0
+  flutter_local_notifications: ^17.0.0
 
 dev_dependencies:
   flutter_test:

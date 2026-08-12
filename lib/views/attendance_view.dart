@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import '../services/api_service.dart';
+import '../models/models.dart';
+import '../core/widgets/luxury_header.dart';
 import '../main.dart';
 
 class AttendanceView extends StatefulWidget {
@@ -153,39 +155,39 @@ class _AttendanceViewState extends State<AttendanceView>
       return DefaultTabController(
         length: 2,
         child: Scaffold(
-          backgroundColor: const Color(0xFFF4F6F8),
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            elevation: 0.5,
-            leading: IconButton(
-              icon: const Icon(Icons.menu),
-              onPressed: () => MainAppController.scaffoldKey.currentState?.openDrawer(),
-            ),
-            title: const Text(
-              'حضور وانصراف الموظفين',
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black),
-            ),
-            centerTitle: true,
-            bottom: TabBar(
-              labelColor: royalGreen,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: goldColor,
-              labelStyle: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 13),
-              tabs: const [
-                Tab(text: 'سجلي الشخصي'),
-                Tab(text: 'لوحة التحكم والتقارير'),
-              ],
-            ),
-          ),
-          body: TabBarView(
+          backgroundColor: const Color(0xFFF8FAFC),
+          body: Column(
             children: [
-              // Tab 1: Personal Attendance
-              SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: _buildPersonalAttendanceBody(context, royalGreen, goldColor, timeStr, dateStr),
+              LuxuryHeader(
+                title: 'حضور وانصراف الموظفين',
+                subtitle: 'إثبات الحضور بالبصمة الجغرافية والتقارير',
               ),
-              // Tab 2: Admin Reports
-              const AttendanceAdminReportView(),
+              Container(
+                color: Colors.white,
+                child: TabBar(
+                  labelColor: royalGreen,
+                  unselectedLabelColor: Colors.grey,
+                  indicatorColor: goldColor,
+                  labelStyle: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 13),
+                  tabs: const [
+                    Tab(text: 'سجلي الشخصي'),
+                    Tab(text: 'لوحة التحكم والتقارير'),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    // Tab 1: Personal Attendance
+                    SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
+                      child: _buildPersonalAttendanceBody(context, royalGreen, goldColor, timeStr, dateStr),
+                    ),
+                    // Tab 2: Admin Reports
+                    const AttendanceAdminReportView(),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -194,23 +196,20 @@ class _AttendanceViewState extends State<AttendanceView>
 
     // For normal employees
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F8),
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () => MainAppController.scaffoldKey.currentState?.openDrawer(),
-        ),
-        title: const Text('تسجيل الحضور الشخصي', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Cairo')),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0.5,
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: _buildPersonalAttendanceBody(context, royalGreen, goldColor, timeStr, dateStr),
-        ),
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Column(
+        children: [
+          LuxuryHeader(
+            title: 'تسجيل الحضور الشخصي',
+            subtitle: 'إثبات الحضور بالبصمة الجغرافية',
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: _buildPersonalAttendanceBody(context, royalGreen, goldColor, timeStr, dateStr),
+            ),
+          ),
+        ],
       ),
     );
   }

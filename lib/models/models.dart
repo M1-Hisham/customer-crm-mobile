@@ -5,6 +5,8 @@ class SystemUser {
   final String name;
   final String role;
   final String createdAt;
+  final bool isOnline;
+  final bool canViewCustomers;
 
   SystemUser({
     required this.uid,
@@ -13,6 +15,8 @@ class SystemUser {
     required this.name,
     required this.role,
     required this.createdAt,
+    this.isOnline = false,
+    this.canViewCustomers = true,
   });
 
   factory SystemUser.fromJson(Map<String, dynamic> json) {
@@ -23,6 +27,8 @@ class SystemUser {
       name: json['name'] ?? '',
       role: json['role'] ?? '',
       createdAt: json['created_at'] ?? json['createdAt'] ?? '',
+      isOnline: json['isOnline'] ?? json['is_online'] ?? false,
+      canViewCustomers: json['canViewCustomers'] ?? true,
     );
   }
 
@@ -34,6 +40,7 @@ class SystemUser {
       'name': name,
       'role': role,
       'created_at': createdAt,
+      'canViewCustomers': canViewCustomers,
     };
   }
 }
@@ -257,6 +264,12 @@ class Appointment {
   final String? opposingName;
   final String? opposingRole;
   final String? caseSubject;
+  final String? postponeReason;
+  final String? sessionResult;
+  final String? deedNumber;
+  final String? deedDate;
+  final String? deedCourt;
+  final String? deedObjectionDeadline;
   final String createdAt;
 
   Appointment({
@@ -277,6 +290,12 @@ class Appointment {
     this.opposingName,
     this.opposingRole,
     this.caseSubject,
+    this.postponeReason,
+    this.sessionResult,
+    this.deedNumber,
+    this.deedDate,
+    this.deedCourt,
+    this.deedObjectionDeadline,
     required this.createdAt,
   });
 
@@ -299,9 +318,16 @@ class Appointment {
       opposingName: json['opposingName'] ?? json['opposing_name'],
       opposingRole: json['opposingRole'] ?? json['opposing_role'],
       caseSubject: json['caseSubject'] ?? json['case_subject'],
+      postponeReason: json['postponeReason'] ?? json['postpone_reason'],
+      sessionResult: json['sessionResult'] ?? json['session_result'],
+      deedNumber: json['deedNumber'] ?? json['deed_number'],
+      deedDate: json['deedDate'] ?? json['deed_date'],
+      deedCourt: json['deedCourt'] ?? json['deed_court'],
+      deedObjectionDeadline: json['deedObjectionDeadline'] ?? json['deed_objection_deadline'],
       createdAt: json['createdAt'] ?? json['created_at'] ?? '',
     );
   }
+
 }
 
 class ChatRoomParticipant {
@@ -365,6 +391,7 @@ class ChatMessage {
   final String senderName;
   final String text;
   final String createdAt;
+  final bool isRead;
 
   ChatMessage({
     required this.id,
@@ -373,6 +400,7 @@ class ChatMessage {
     required this.senderName,
     required this.text,
     required this.createdAt,
+    this.isRead = false,
   });
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
@@ -383,6 +411,7 @@ class ChatMessage {
       senderName: json['senderName'] ?? json['sender_name'] ?? '',
       text: json['text'] ?? '',
       createdAt: json['createdAt'] ?? json['created_at'] ?? '',
+      isRead: json['isRead'] ?? json['is_read'] ?? false,
     );
   }
 }

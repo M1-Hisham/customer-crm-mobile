@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import 'documents_view.dart';
 import '../utils/date_helper.dart';
 import '../core/widgets/staggered_list_item.dart';
+import '../core/widgets/luxury_header.dart';
 
 class CasesView extends StatefulWidget {
   final List<Case> cases;
@@ -1399,9 +1400,9 @@ class _CasesViewState extends State<CasesView> {
                             : '${selectedHearingDate!.year}-${selectedHearingDate!.month.toString().padLeft(2, '0')}-${selectedHearingDate!.day.toString().padLeft(2, '0')}',
                         'lawyerId': selectedLawyerId,
                         'lawyerName': lawyer?.name,
-                        'traineeId': selectedTraineeAccess == 'specific' ? selectedTraineeId : null,
-                        'traineeName': selectedTraineeAccess == 'specific' ? trainee?.name : null,
-                        'traineeAccess': selectedTraineeAccess,
+                        'traineeId': selectedTraineeId ?? (selectedTraineeAccess == 'specific' ? selectedTraineeId : null),
+                        'traineeName': (selectedTraineeId != null && trainee != null) ? trainee.name : (selectedTraineeAccess == 'specific' ? trainee?.name : null),
+                        'traineeAccess': selectedTraineeId != null ? 'specific' : selectedTraineeAccess,
                         'clientType': selectedClientType,
                       };
 
@@ -1494,27 +1495,21 @@ class _CasesViewState extends State<CasesView> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F8),
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () => MainAppController.scaffoldKey.currentState?.openDrawer(),
-        ),
-        title: const Text('إدارة القضايا', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0.5,
-        centerTitle: true,
-      ),
+      backgroundColor: const Color(0xFFF8FAFC),
       floatingActionButton: canCreate
-          ? FloatingActionButton(
+          ? FloatingActionButton.extended(
               onPressed: _openCreateCaseDialog,
               backgroundColor: royalGreen,
-              child: Icon(Icons.add, color: goldColor),
+              icon: Icon(Icons.add, color: goldColor),
+              label: const Text('قضية جديدة', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
             )
           : null,
       body: Column(
         children: [
+          LuxuryHeader(
+            title: _isArchivedView ? 'أرشيف القضايا المغلقة' : 'إدارة ملفات القضايا',
+            subtitle: _isArchivedView ? 'قائمة القضايا المحكومة والمغلقة' : 'القضايا المتداولة والمنظورة أمام المحاكم',
+          ),
           // Search
           Container(
             color: Colors.white,
@@ -1604,11 +1599,17 @@ class _CasesViewState extends State<CasesView> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text('رقم: ${c.caseNumber}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                                  Text(
-                                    'المحكمة: ${c.court}',
-                                    style: TextStyle(fontSize: 9, color: royalGreen, fontWeight: FontWeight.bold),
+                                  Flexible(child: Text('رقم: ${c.caseNumber}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis, maxLines: 1)),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      'المحكمة: ${c.court}',
+                                      style: TextStyle(fontSize: 9, color: royalGreen, fontWeight: FontWeight.bold),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
                                   ),
+                                  const SizedBox(width: 4),
                                   InkWell(
                                     onTap: () => _showDetailsSheet(c, initialTabIndex: 2),
                                     borderRadius: BorderRadius.circular(4),

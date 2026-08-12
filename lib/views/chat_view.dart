@@ -98,6 +98,7 @@ class _ChatViewState extends State<ChatView> {
     });
 
     widget.onActiveRoomChanged(room.id);
+    ApiService().markMessagesAsRead(room.id).catchError((_) {});
 
     _fetchMessages(room.id).whenComplete(() => setState(() => _loadingMessages = false));
 
@@ -225,6 +226,15 @@ class _ChatViewState extends State<ChatView> {
     }
   }
 
+  bool _isRoomPartnerOnline(ChatRoom room) {
+    if (room.type == 'group') return false;
+    final currentUser = ApiService().currentUser;
+    if (currentUser == null) return false;
+    final otherId = room.participantIds.firstWhere((id) => id != currentUser.uid, orElse: () => '');
+    if (otherId.isEmpty) return false;
+    return widget.staff.any((u) => u.uid == otherId && u.isOnline);
+  }
+
   void _showNewChatDialog() {
     showModalBottomSheet(
       context: context,
@@ -258,10 +268,28 @@ class _ChatViewState extends State<ChatView> {
                               border: Border.all(color: const Color(0xFFE2E8F0)),
                             ),
                             child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: royalGreen,
-                                foregroundColor: Colors.white,
-                                child: Text(staff.name.substring(0, 1)),
+                              leading: Stack(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: royalGreen,
+                                    foregroundColor: Colors.white,
+                                    child: Text(staff.name.substring(0, 1)),
+                                  ),
+                                  if (staff.isOnline)
+                                    Positioned(
+                                      right: 0,
+                                      bottom: 0,
+                                      child: Container(
+                                        width: 12,
+                                        height: 12,
+                                        decoration: BoxDecoration(
+                                          color: Colors.green,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: Colors.white, width: 2),
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                               title: Text(staff.name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                               subtitle: Text(staff.role == 'lawyer' ? 'محامي مستشار' : 'موظف البوابة', style: TextStyle(fontSize: 9, color: goldColor, fontWeight: FontWeight.bold)),
@@ -361,7 +389,23 @@ class _ChatViewState extends State<ChatView> {
                                       ),
                                     Text(msg.text, style: const TextStyle(fontSize: 11, color: Colors.black87, height: 1.4)),
                                     const SizedBox(height: 4),
-                                    Text(timeStr, style: const TextStyle(fontSize: 7, color: Color(0xFF94A3B8)), textAlign: isMe ? TextAlign.left : TextAlign.right),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(timeStr, style: const TextStyle(fontSize: 7, color: Color(0xFF94A3B8))),
+                                        if (isMe) ...[
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            msg.isRead ? '✓✓' : '✓',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: msg.isRead ? Colors.blue : Colors.grey,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
                                   ],
                                 ),
                               ),
@@ -482,10 +526,28 @@ class _ChatViewState extends State<ChatView> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: royalGreen.withOpacity(0.08),
-                          foregroundColor: royalGreen,
-                          child: const Icon(Icons.person, size: 20),
+                        leading: Stack(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: royalGreen.withOpacity(0.08),
+                              foregroundColor: royalGreen,
+                              child: const Icon(Icons.person, size: 20),
+                            ),
+                            if (_isRoomPartnerOnline(room))
+                              Positioned(
+                                right: 0,
+                                bottom: 0,
+                                child: Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: BoxDecoration(
+                                    color: Colors.green,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 2),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                         title: Text(_getRoomName(room), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                         subtitle: Text(_getRoomRole(room), style: TextStyle(fontSize: 9, color: goldColor, fontWeight: FontWeight.bold)),

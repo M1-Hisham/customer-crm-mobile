@@ -3,6 +3,8 @@ import '../models/models.dart';
 import '../services/api_service.dart';
 import 'package:intl/intl.dart';
 import '../utils/date_helper.dart';
+import '../core/widgets/staggered_list_item.dart';
+import '../core/widgets/luxury_header.dart';
 
 class AppointmentsView extends StatefulWidget {
   final List<Appointment> appointments;
@@ -438,23 +440,21 @@ class _AppointmentsViewState extends State<AppointmentsView> {
     final canManage = userRole != 'accountant' && userRole != 'reception' && userRole != 'receptionist';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F8),
-      appBar: AppBar(
-        title: const Text('إدارة مواعيد الجلسات', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0.5,
-        centerTitle: true,
-        actions: [
-          if (canManage)
-            IconButton(
-              icon: const Icon(Icons.add),
+      backgroundColor: const Color(0xFFF8FAFC),
+      floatingActionButton: canManage
+          ? FloatingActionButton.extended(
               onPressed: _showAddDialog,
+              backgroundColor: royalGreen,
+              icon: Icon(Icons.add, color: goldColor),
+              label: const Text('جلسة جديدة', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
             )
-        ],
-      ),
+          : null,
       body: Column(
         children: [
+          LuxuryHeader(
+            title: 'جدول الجلسات والمواعيد',
+            subtitle: 'مواعيد الجلسات القضائية والتنبيهات المباشرة',
+          ),
           // Filter Tabs
           Container(
             color: Colors.white,
@@ -536,14 +536,16 @@ class _AppointmentsViewState extends State<AppointmentsView> {
                         dateStr = appt.date;
                       }
 
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                      return StaggeredListItem(
+                        index: index,
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -553,11 +555,12 @@ class _AppointmentsViewState extends State<AppointmentsView> {
                                 Expanded(
                                   child: Text(appt.title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
                                 ),
-                                Row(
-                                  children: [
-                                    if (appt.requiresReply) ...[
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                Flexible(
+                                  child: Row(
+                                    children: [
+                                      if (appt.requiresReply) ...[
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                         margin: const EdgeInsets.only(left: 6),
                                         decoration: BoxDecoration(
                                           color: Colors.red.shade900.withOpacity(0.1),
@@ -603,6 +606,7 @@ class _AppointmentsViewState extends State<AppointmentsView> {
                                       ),
                                     ),
                                   ],
+                                ),
                                 )
                               ],
                             ),
@@ -610,25 +614,31 @@ class _AppointmentsViewState extends State<AppointmentsView> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Row(
-                                  children: [
-                                    Icon(Icons.account_balance_outlined, size: 12, color: goldColor),
-                                    const SizedBox(width: 4),
-                                    Text('المقر: ${appt.court}', style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
-                                  ],
+                                Flexible(
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.account_balance_outlined, size: 12, color: goldColor),
+                                      const SizedBox(width: 4),
+                                      Flexible(child: Text('المقر: ${appt.court}', style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)), overflow: TextOverflow.ellipsis, maxLines: 1)),
+                                    ],
+                                  ),
                                 ),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.access_time, size: 12, color: Color(0xFF94A3B8)),
-                                    const SizedBox(width: 4),
-                                    Text('$dateStr | $timeStr', style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
-                                  ],
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.access_time, size: 12, color: Color(0xFF94A3B8)),
+                                      const SizedBox(width: 4),
+                                      Flexible(child: Text('$dateStr | $timeStr', style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)), overflow: TextOverflow.ellipsis, maxLines: 1)),
+                                    ],
+                                  ),
                                 )
                               ],
                             ),
                             if (appt.caseTitle != null) ...[
                               const SizedBox(height: 6),
-                              Text('القضية المرتبطة: ${appt.caseTitle} (رقم: ${appt.caseNumber})', style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8))),
+                              Text('القضية المرتبطة: ${appt.caseTitle} (رقم: ${appt.caseNumber})', style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8)), maxLines: 2, overflow: TextOverflow.ellipsis),
                             ],
                             if ((appt.clientName != null && appt.clientName!.isNotEmpty) || (appt.opposingName != null && appt.opposingName!.isNotEmpty) || (appt.caseSubject != null && appt.caseSubject!.isNotEmpty)) ...[
                               const SizedBox(height: 8),
@@ -686,7 +696,25 @@ class _AppointmentsViewState extends State<AppointmentsView> {
                                 child: Text(appt.notes!, style: const TextStyle(fontSize: 9, color: Color(0xFF64748B), height: 1.4)),
                               )
                             ],
-                            if (canManage) ...[
+                             if (appt.postponeReason != null && appt.postponeReason!.isNotEmpty) ...[
+                               const SizedBox(height: 8),
+                               Container(
+                                 width: double.infinity,
+                                 padding: const EdgeInsets.all(8),
+                                 decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.blue.shade200)),
+                                 child: Text('📅 سبب التأجيل: ${appt.postponeReason!}', style: TextStyle(fontSize: 10, color: Colors.blue.shade900, fontWeight: FontWeight.bold)),
+                               )
+                             ],
+                             if (appt.sessionResult == 'judgment' && appt.deedNumber != null && appt.deedNumber!.isNotEmpty) ...[
+                               const SizedBox(height: 8),
+                               Container(
+                                 width: double.infinity,
+                                 padding: const EdgeInsets.all(8),
+                                 decoration: BoxDecoration(color: Colors.amber.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.amber.shade200)),
+                                 child: Text('⚖️ حكم - صك رقم: ${appt.deedNumber!} ${appt.deedObjectionDeadline != null ? " | ⏰ آخر اعتراض: " + appt.deedObjectionDeadline! : ""}', style: TextStyle(fontSize: 10, color: Colors.amber.shade900, fontWeight: FontWeight.bold)),
+                               )
+                             ],
+                             if (canManage) ...[
                               const SizedBox(height: 8),
                               Align(
                                 alignment: Alignment.centerLeft,
@@ -721,7 +749,7 @@ class _AppointmentsViewState extends State<AppointmentsView> {
                             ]
                           ],
                         ),
-                      );
+                      ));
                     },
                   ),
           )

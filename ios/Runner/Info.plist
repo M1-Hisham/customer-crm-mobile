@@ -66,5 +66,8 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSFaceIDUsageDescription</key>
+	<string>يتطلب التطبيق استخدام بصمة الوجه (Face ID) لتأكيد هويتك وتسجيل الدخول الآمن لحساب الموظف</string>
 </dict>
 </plist>
+

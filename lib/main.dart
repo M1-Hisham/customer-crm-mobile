@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'services/api_service.dart';
+import 'services/notification_service.dart';
 import 'models/models.dart';
 import 'views/activation_view.dart';
 import 'views/login_view.dart';
@@ -14,18 +16,23 @@ import 'views/appointments_view.dart';
 import 'views/alerts_view.dart';
 import 'views/client_dashboard_view.dart';
 import 'views/attendance_view.dart';
+import 'views/tasks_view.dart';
+import 'views/splash_screen.dart';
 import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 
 import 'core/theme/app_theme.dart';
+import 'core/widgets/luxury_header.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   final api = ApiService();
   await api.init();
+  await NotificationService().initialize();
   
   runApp(const HajjajLawApp());
 }
+
 
 class HajjajLawApp extends StatelessWidget {
   const HajjajLawApp({super.key});
@@ -103,12 +110,17 @@ class _MainAppControllerState extends State<MainAppController> {
 
   Future<void> _checkStatus() async {
     setState(() => _loading = true);
+    final startTime = DateTime.now();
     final api = ApiService();
     
     // Check auth
     final profile = await api.authMe();
     
     if (profile == null) {
+      final elapsed = DateTime.now().difference(startTime).inMilliseconds;
+      if (elapsed < 2500) {
+        await Future.delayed(Duration(milliseconds: 2500 - elapsed));
+      }
       if (mounted) {
         setState(() {
           _needsActivation = false;
@@ -122,6 +134,10 @@ class _MainAppControllerState extends State<MainAppController> {
     // Only staff roles require device activation
     if (profile.role != 'client') {
       if (!api.isDeviceActivated) {
+        final elapsed = DateTime.now().difference(startTime).inMilliseconds;
+        if (elapsed < 2500) {
+          await Future.delayed(Duration(milliseconds: 2500 - elapsed));
+        }
         if (mounted) {
           setState(() {
             _needsActivation = true;
@@ -132,10 +148,22 @@ class _MainAppControllerState extends State<MainAppController> {
       }
     }
 
+    _currentUser = profile;
+
+    // PRELOAD ALL SERVER DATA (Cases, Customers, Appointments, Staff, Tasks, Chat)
+    if (_currentUser != null && _currentUser!.role != 'client') {
+      await _fetchDashboardData();
+    }
+
+    // Ensure minimum splash screen display duration of 2.5 seconds
+    final elapsed = DateTime.now().difference(startTime).inMilliseconds;
+    if (elapsed < 2500) {
+      await Future.delayed(Duration(milliseconds: 2500 - elapsed));
+    }
+
     if (mounted) {
       setState(() {
         _needsActivation = false;
-        _currentUser = profile;
         _loading = false;
       });
       
@@ -207,22 +235,15 @@ class _MainAppControllerState extends State<MainAppController> {
 
     // Role-based Nav Tabs check to see where 'chat' view stands
     final role = _currentUser!.role;
+    final isShahad = _currentUser!.username.toLowerCase().trim() == 'shahad.law' || _currentUser!.email.toLowerCase().trim() == 'shahd@lawfirm.local';
     final isAdmin = ['admin', 'super_admin', 'manager'].contains(role);
-    final isReception = ['reception', 'receptionist', 'lawyer', ...['admin', 'super_admin', 'manager']].contains(role);
+    final isReception = ['reception', 'receptionist', 'lawyer', ...['admin', 'super_admin', 'manager']].contains(role) || isShahad;
     final isArchive = ['archive', 'lawyer', 'trainee_lawyer', 'secretary', ...['admin', 'super_admin', 'manager']].contains(role);
     final canAccessAppointments = isArchive && !['reception', 'receptionist'].contains(role);
     final canAccessAlerts = isArchive && !['reception', 'receptionist'].contains(role);
 
-    final List<Map<String, dynamic>> tabs = [];
-    tabs.add({'id': 'home'});
-    if (isReception) tabs.add({'id': 'reception'});
-    tabs.add({'id': 'directory'});
-    if (isArchive) tabs.add({'id': 'cases'});
-    if (canAccessAppointments) tabs.add({'id': 'appointments'});
-    if (canAccessAlerts) tabs.add({'id': 'alerts'});
-    tabs.add({'id': 'chat'});
-
-    final currentTabId = _currentIndex < tabs.length ? tabs[_currentIndex]['id'] : '';
+    final allTabs = _buildAllTabs();
+    final currentTabId = _currentIndex < allTabs.length ? allTabs[_currentIndex]['id'] : '';
 
     for (final room in rooms) {
       final prevTime = _roomsLastSeenAt[room.id];
@@ -250,6 +271,11 @@ class _MainAppControllerState extends State<MainAppController> {
                     FlutterRingtonePlayer().playNotification();
                     playedSound = true;
                   }
+                  NotificationService().showNotification(
+                    id: room.id.hashCode,
+                    title: '💬 رسالة جديدة من ${lastMsg.senderName}',
+                    body: lastMsg.text.isNotEmpty ? lastMsg.text : 'مستند / مرفق جديد',
+                  );
                 } else {
                   if (!playedSound) {
                     FlutterRingtonePlayer().playNotification();
@@ -262,11 +288,13 @@ class _MainAppControllerState extends State<MainAppController> {
         } catch (_) {}
         
         _roomsLastSeenAt[room.id] = room.lastMessageAt;
+
       }
     }
   }
 
   void _processAppointmentsNotifications(List<Appointment> appts) {
+    NotificationService().syncAppointmentsNotifications(appts);
     if (_isFirstApptFetch) {
       for (final appt in appts) {
         _knownAppointmentIds.add(appt.id);
@@ -274,6 +302,7 @@ class _MainAppControllerState extends State<MainAppController> {
       _isFirstApptFetch = false;
       return;
     }
+
 
     final now = DateTime.now();
     bool playedSound = false;
@@ -376,20 +405,31 @@ class _MainAppControllerState extends State<MainAppController> {
     if (_currentUser == null) return [];
 
     final role = _currentUser!.role;
-    final isReception = ['reception', 'receptionist', 'lawyer', 'admin', 'super_admin', 'manager'].contains(role);
+    final isShahad = _currentUser!.username.toLowerCase().trim() == 'shahad.law' || _currentUser!.email.toLowerCase().trim() == 'shahd@lawfirm.local';
+    final isReception = ['reception', 'receptionist', 'lawyer', 'admin', 'super_admin', 'manager'].contains(role) || isShahad;
     final isArchive = ['archive', 'lawyer', 'trainee_lawyer', 'secretary', 'admin', 'super_admin', 'manager'].contains(role);
     final canAccessAppointments = isArchive && !['reception', 'receptionist'].contains(role);
     final canAccessAlerts = isArchive && !['reception', 'receptionist'].contains(role);
+    final canViewCustomers = _currentUser!.canViewCustomers;
 
     return [
       // ── 6 التابات السفلية المعتمدة بالترتيب ──
       {
-        'id': 'directory',
-        'label': 'الموكلين',
-        'icon': Icons.folder_shared_outlined,
-        'activeIcon': Icons.folder_shared_rounded,
+        'id': 'home',
+        'label': 'الرئيسية',
+        'icon': Icons.home_outlined,
+        'activeIcon': Icons.home_rounded,
         'inBottomNav': true,
-        'view': DirectoryView(customers: _customers, staff: _staff, onCustomerUpdated: _fetchDashboardData),
+        'view': HomeView(
+          customers: _customers,
+          cases: _cases,
+          appointments: _appointments,
+          onTabChange: (tabId) {
+            final allTabs = _buildAllTabs();
+            final index = allTabs.indexWhere((t) => t['id'] == tabId);
+            if (index != -1) setState(() => _currentIndex = index);
+          },
+        ),
       },
       if (isArchive) {
         'id': 'cases',
@@ -434,6 +474,14 @@ class _MainAppControllerState extends State<MainAppController> {
           onAppointmentsUpdated: _fetchDashboardData,
         ),
       },
+      if (isArchive) {
+        'id': 'tasks',
+        'label': 'المهام',
+        'icon': Icons.task_alt_outlined,
+        'activeIcon': Icons.task_alt,
+        'inBottomNav': true,
+        'view': TasksView(currentUser: _currentUser!, staff: _staff),
+      },
       {
         'id': 'chat',
         'label': 'الدردشة',
@@ -462,22 +510,13 @@ class _MainAppControllerState extends State<MainAppController> {
       },
 
       // ── التابات الفرعية التي ستظهر في الـ Drawer ──
-      {
-        'id': 'home',
-        'label': 'الرئيسية',
-        'icon': Icons.home_outlined,
-        'activeIcon': Icons.home_rounded,
+      if (canViewCustomers) {
+        'id': 'directory',
+        'label': 'الموكلين',
+        'icon': Icons.folder_shared_outlined,
+        'activeIcon': Icons.folder_shared_rounded,
         'inBottomNav': false,
-        'view': HomeView(
-          customers: _customers,
-          cases: _cases,
-          appointments: _appointments,
-          onTabChange: (tabId) {
-            final allTabs = _buildAllTabs();
-            final index = allTabs.indexWhere((t) => t['id'] == tabId);
-            if (index != -1) setState(() => _currentIndex = index);
-          },
-        ),
+        'view': DirectoryView(customers: _customers, staff: _staff, onCustomerUpdated: _fetchDashboardData),
       },
       if (isReception) {
         'id': 'reception',
@@ -512,17 +551,8 @@ class _MainAppControllerState extends State<MainAppController> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(color: royalGreen),
-              const SizedBox(height: 16),
-              const Text('منصة حجاج — جاري التحميل...', style: TextStyle(fontSize: 12, fontFamily: 'Cairo')),
-            ],
-          ),
-        ),
+      return SplashScreen(
+        onFinish: () {},
       );
     }
 
@@ -552,76 +582,149 @@ class _MainAppControllerState extends State<MainAppController> {
     final bottomTabs = allTabs.where((t) => t['inBottomNav'] == true).toList();
     final drawerTabs = allTabs.where((t) => t['inBottomNav'] == false).toList();
 
-    // تأكد الـ index في النطاق
+    // Ensure index in range
     if (_currentIndex >= allTabs.length) _currentIndex = 0;
 
-    // إيجاد الـ bottom nav index الصح
     final currentTab = _currentIndex < allTabs.length ? allTabs[_currentIndex] : allTabs[0];
-    final isInBottomNav = currentTab['inBottomNav'] == true;
 
-    return Scaffold(
-      key: MainAppController.scaffoldKey,
-      backgroundColor: const Color(0xFFF4F6F8),
-      body: allTabs[_currentIndex < allTabs.length ? _currentIndex : 0]['view'] as Widget,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
 
-      // ── Drawer الجانبي ──────────────────────────────────────────
-      drawer: Drawer(
-        backgroundColor: const Color(0xFFF8F9FA),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header الـ Drawer
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                decoration: BoxDecoration(
-                  color: royalGreen,
-                  border: Border(bottom: BorderSide(color: goldColor, width: 1.5)),
+        // 1. If Drawer is open, close drawer
+        if (MainAppController.scaffoldKey.currentState?.isDrawerOpen ?? false) {
+          Navigator.of(context).pop();
+          return;
+        }
+
+        // 2. If current tab is not Home (0), return back to Home!
+        if (_currentIndex != 0) {
+          setState(() => _currentIndex = 0);
+          return;
+        }
+
+        // 3. If already on Home (0), show exit confirmation dialog
+        final shouldExit = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text(
+              'الخروج من التطبيق',
+              style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            content: const Text(
+              'هل ترغب في إغلاق تطبيق منصة حجاج الضويحي للمحاماة؟',
+              style: TextStyle(fontFamily: 'Cairo', fontSize: 13),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('إلغاء', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryNavy,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: goldColor.withOpacity(0.2),
-                      child: Text(
-                        _currentUser!.name.substring(0, 1),
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: goldColor,
-                          fontFamily: 'Cairo',
-                        ),
-                      ),
+                child: const Text('إغلاق', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldExit == true) {
+          SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
+        key: MainAppController.scaffoldKey,
+        backgroundColor: const Color(0xFFF8FAFC),
+        body: allTabs[_currentIndex < allTabs.length ? _currentIndex : 0]['view'] as Widget,
+
+        // ── Drawer الجانبي المطور باللوجو الخط العربي والنظام الفاخر ─────
+        drawer: Drawer(
+          backgroundColor: const Color(0xFFF8FAFC),
+          child: SafeArea(
+            child: Column(
+              children: [
+                // Header الـ Drawer المطور باللوجو الرسمي الفاخر
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+                  decoration: const BoxDecoration(
+                    color: AppTheme.primaryNavy,
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(20),
+                      bottomRight: Radius.circular(20),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 10,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         children: [
-                          Text(
-                            _currentUser!.name,
-                            style: const TextStyle(
+                          Container(
+                            width: 52,
+                            height: 52,
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
                               color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Cairo',
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppTheme.secondaryGold, width: 1.5),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.asset('assets/logo.png', fit: BoxFit.contain),
                             ),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '@${_currentUser!.username}',
-                            style: TextStyle(
-                              color: goldColor,
-                              fontSize: 11,
-                              fontFamily: 'Cairo',
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _currentUser!.name,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Cairo',
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.secondaryGold.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    _currentUser!.role == 'super_admin' ? 'مشرف عام أول' : _currentUser!.role == 'admin' ? 'مشرف عام' : _currentUser!.role == 'lawyer' ? 'محامي مستشار' : _currentUser!.role == 'trainee_lawyer' ? 'محامي متدرب' : 'موظف المنصة',
+                                    style: const TextStyle(
+                                      color: AppTheme.secondaryGold,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'Cairo',
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
 
               // قائمة التابات الإضافية
               Expanded(
@@ -750,22 +853,23 @@ class _MainAppControllerState extends State<MainAppController> {
           ),
         ),
       ),
+    ),
     );
   }
 
   Widget _buildProfileView() {
     final String label = _currentUser!.role == 'super_admin' ? 'مشرف عام أول' : _currentUser!.role == 'admin' ? 'مشرف عام' : _currentUser!.role == 'lawyer' ? 'محامي مستشار' : _currentUser!.role == 'trainee_lawyer' ? 'محامي متدرب' : 'موظف المنصة';
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F8),
-      appBar: AppBar(
-        title: const Text('الملف الشخصي للموظف', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0.5,
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Column(
+        children: [
+          LuxuryHeader(
+            title: 'الملف الشخصي للموظف',
+            subtitle: 'بيانات الحساب الشخصي والصلاحيات',
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
         child: Column(
           children: [
             Center(
@@ -826,6 +930,9 @@ class _MainAppControllerState extends State<MainAppController> {
           ],
         ),
       ),
+    ),
+            ],
+          ),
     );
   }
 

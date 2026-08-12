@@ -4,6 +4,7 @@ import '../main.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
+import '../core/widgets/luxury_header.dart';
 
 class DirectoryView extends StatefulWidget {
   final List<Customer> customers;
@@ -631,20 +632,13 @@ class _DirectoryViewState extends State<DirectoryView> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F8),
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () => MainAppController.scaffoldKey.currentState?.openDrawer(),
-        ),
-        title: const Text('الموكلين', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0.5,
-        centerTitle: true,
-      ),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: Column(
         children: [
+          LuxuryHeader(
+            title: 'دليل الموكلين والعملاء',
+            subtitle: 'سجل بيانات العملاء والشركات والمؤسسات',
+          ),
           // Search Bar & Filter Tabs
           Container(
             color: Colors.white,

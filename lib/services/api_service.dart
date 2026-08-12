@@ -506,6 +506,17 @@ class ApiService {
     throw Exception('فشل إرسال الرسالة');
   }
 
+  Future<void> markMessagesAsRead(String roomId) async {
+    final url = Uri.parse('${AppConfig.baseUrl}/api/chat/rooms/$roomId/read');
+    final response = await http.post(
+      url,
+      headers: _getHeaders(),
+    );
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception('فشل تحديث حالة الرسائل المقروءة');
+    }
+  }
+
   // Admin
   Future<List<AuditLog>> getAuditLogs() async {
     final url = Uri.parse('${AppConfig.baseUrl}/api/admin/audit-logs');
@@ -587,5 +598,61 @@ class ApiService {
       return jsonDecode(response.body);
     }
     throw Exception('فشل جلب تقرير الحضور');
+  }
+
+  // Daily Tasks
+  Future<List<Map<String, dynamic>>> getDailyTasks({String? date}) async {
+    final query = date != null ? '?date=$date' : '';
+    final url = Uri.parse('${AppConfig.baseUrl}/api/tasks/daily$query');
+    final response = await http.get(url, headers: _getHeaders());
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return List<Map<String, dynamic>>.from(data);
+    }
+    throw Exception('فشل جلب المهام اليومية');
+  }
+
+  Future<void> createDailyTask(Map<String, dynamic> data) async {
+    final url = Uri.parse('${AppConfig.baseUrl}/api/tasks/daily');
+    final response = await http.post(
+      url,
+      headers: _getHeaders(),
+      body: jsonEncode(data),
+    );
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('فشل إنشاء المهمة اليومية');
+    }
+  }
+
+  Future<void> deleteDailyTask(String taskId) async {
+    final url = Uri.parse('${AppConfig.baseUrl}/api/tasks/daily/$taskId');
+    final response = await http.delete(url, headers: _getHeaders());
+    if (response.statusCode != 200) {
+      throw Exception('فشل حذف المهمة');
+    }
+  }
+
+  Future<void> completeDailyTask(String taskId, {String? note}) async {
+    final url = Uri.parse('${AppConfig.baseUrl}/api/tasks/daily/$taskId/complete');
+    final response = await http.patch(
+      url,
+      headers: _getHeaders(),
+      body: jsonEncode({'note': note ?? ''}),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('فشل تحديث حالة المهمة');
+    }
+  }
+
+  Future<void> updateDailyTaskNote(String taskId, String note) async {
+    final url = Uri.parse('${AppConfig.baseUrl}/api/tasks/daily/$taskId/note');
+    final response = await http.put(
+      url,
+      headers: _getHeaders(),
+      body: jsonEncode({'note': note}),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('فشل إضافة الملاحظة');
+    }
   }
 }

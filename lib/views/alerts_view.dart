@@ -3,6 +3,7 @@ import '../models/models.dart';
 import '../services/api_service.dart';
 import 'package:intl/intl.dart';
 import '../utils/date_helper.dart';
+import '../core/widgets/luxury_header.dart';
 
 class AlertsView extends StatefulWidget {
   final List<Appointment> appointments;
@@ -242,16 +243,13 @@ class _AlertsViewState extends State<AlertsView> {
     final postponedCount = allAlerts.where((a) => a.status == 'postponed').length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F8),
-      appBar: AppBar(
-        title: const Text('تنبيهات الرد على الجلسات', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0.5,
-        centerTitle: true,
-      ),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: Column(
         children: [
+          LuxuryHeader(
+            title: 'تنبيهات الرد على الجلسات',
+            subtitle: 'المتابعة الدقيقة لردود الجلسات المحددة بزمن',
+          ),
           // Visual Stats Bar
           Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),

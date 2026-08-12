@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import '../../core/theme/app_theme.dart';
 
 /// A tappable case row that Hero-morphs into [CaseDetailScreen]'s header.
 class CaseListTile extends StatefulWidget {
