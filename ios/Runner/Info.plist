@@ -68,6 +68,16 @@
 	</array>
 	<key>NSFaceIDUsageDescription</key>
 	<string>يتطلب التطبيق استخدام بصمة الوجه (Face ID) لتأكيد هويتك وتسجيل الدخول الآمن لحساب الموظف</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>يحتاج التطبيق إلى الوصول للتقويم لإضافة مواعيد الجلسات والمهام إلى تقويم جهازك.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>يحتاج التطبيق إلى الوصول لمكتبة الصور لاختيار وتحميل المستندات والمرفقات الخاصه بالقضايا.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>يحتاج التطبيق إلى استخدام الكاميرا لالتقاط صور المستندات والمرفقات.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>يحتاج التطبيق إلى الوصول للموقع الجغرافي لتحديد مكانك عند تسجيل الحضور والإنصراف.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>يحتاج التطبيق إلى الوصول للموقع الجغرافي لتحديد مكانك عند استخدام خدمات التطبيق.</string>
 </dict>
 </plist>
 

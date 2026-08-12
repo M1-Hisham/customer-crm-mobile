@@ -2,7 +2,7 @@ name: mobile_flutter
 description: "A new Flutter project for Hajjaj Law Firm CRM system."
 publish_to: 'none'
 
-version: 1.0.4+5
+version: 1.0.4+6
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
